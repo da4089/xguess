@@ -5,7 +5,7 @@
  *
  * File:        $Source$
  * Version:     $RCSfile$ $Revision$
- * Copyright:   (C) 2000-2003 David Arnold.
+ * Copyright:   (C) 2000-2004 David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,75 +44,109 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <X11/extensions/XKBgeom.h>
 
 static error_handler(Display *dpy, XErrorEvent err) {
-  printf("got an error\n");
-  printf("code = %d\n", err.error_code);
-  return 1;
+    printf("got an error\n");
+    printf("code = %d\n", err.error_code);
+    return 1;
 }
 
 
 char *xguess_from_xkb(void) {
-  int major = XkbMajorVersion;
-  int minor = XkbMinorVersion;
-  int event, error, status;
-  char *display_name = ":0.0";
-  Display *display = NULL;
-  XkbDescPtr kbd;
-  char *keycodes, *geometry, *types, *symbols, *s, *c, *b;
-  char buf[1023];
+    int major = XkbMajorVersion;
+    int minor = XkbMinorVersion;
+    int event, error, status;
+    char *display_name = ":0.0";
+    Display *display = NULL;
+    XkbDescPtr kbd;
+    char *keycodes, *geometry, *types, *symbols, *s, *c, *b;
+    char buf[1023];
+    int was_punct;
 
-  /* check version, extension and open display */
-  display = XkbOpenDisplay(display_name, &event, &error, &major,  &minor, &status);
-  if (display == NULL) {
-    switch (status) {
-    case XkbOD_BadLibraryVersion:
-      fprintf(stderr, "The version of the linked X11 library (%d.%d) is different to that used to compile this program (%d.%d).  Aborting.\n", major, minor, XkbMajorVersion, XkbMinorVersion);
-      break;
-    case XkbOD_ConnectionRefused:
-      fprintf(stderr, "Cannot open display \"%s\".  Aborting.\n", display_name);
-      break;
-    case XkbOD_NonXkbServer:
-      fprintf(stderr, "specified server does not support XKB extension.\n");
-      break;
-    case XkbOD_BadServerVersion:
-      fprintf(stderr, "bad server version.\n");
-      break;
-    default:
-      fprintf(stderr, "unknown error opening display, %d\n", status);
+    /* check version, extension and open display */
+    display = XkbOpenDisplay(display_name, &event, &error, &major,  &minor, &status);
+    if (display == NULL) {
+        switch (status) {
+        case XkbOD_BadLibraryVersion:
+            fprintf(stderr, "The version of the linked X11 library (%d.%d) is different to that used to compile this program (%d.%d).  Aborting.\n", major, minor, XkbMajorVersion, XkbMinorVersion);
+            break;
+        case XkbOD_ConnectionRefused:
+            fprintf(stderr, "Cannot open display \"%s\".  Aborting.\n", display_name);
+            break;
+        case XkbOD_NonXkbServer:
+            fprintf(stderr, "specified server does not support XKB extension.\n");
+            break;
+        case XkbOD_BadServerVersion:
+            fprintf(stderr, "bad server version.\n");
+            break;
+        default:
+            fprintf(stderr, "unknown error opening display, %d\n", status);
+        }
+        return NULL;
     }
-    return NULL;
-  }
 
-  /* trap errors */
-  XSetErrorHandler(error_handler);
+    /* trap errors */
+    XSetErrorHandler(error_handler);
 
-  /* get keyboard description from server */
-  kbd = XkbGetKeyboard(display, XkbAllComponentsMask, XkbUseCoreKbd);
-  if (kbd == NULL) {
-    fprintf(stderr, "XkbGetKeyboard failed..\n");
-    return NULL;
-  }
-
-  /* look up attributes */
-  geometry = XGetAtomName(display, kbd->geom->name);
-  keycodes = XGetAtomName(display, kbd->names->keycodes);
-  symbols = XGetAtomName(display, kbd->names->symbols);
-
-  /* strips parens from geometry */
-  c = geometry;
-  b = &buf[0];
-  while (*c != '(' && *c != '\0') {
-    c++;
-  }
-
-  if (*c == '(') {
-    c++;
-    while (*c != ')' && *c != '\0') {
-      *b++ = *c++;
+    /* get keyboard description from server */
+    kbd = XkbGetKeyboard(display, XkbAllComponentsMask, XkbUseCoreKbd);
+    if (kbd == NULL) {
+        fprintf(stderr, "XkbGetKeyboard failed..\n");
+        return NULL;
     }
-  }
 
-  sprintf(b, "-%s-%s", keycodes, symbols);
-  return strdup(buf);
+    /* look up attributes */
+    geometry = XGetAtomName(display, kbd->geom->name);
+    keycodes = XGetAtomName(display, kbd->names->keycodes);
+    symbols = XGetAtomName(display, kbd->names->symbols);
+
+    /* simplify value */
+    b = &buf[0];
+  
+    /* strips punct from geometry */
+    was_punct = 0;
+    for (c = geometry; *c != '\0'; c++) {
+        if (isalnum(*c)) {
+            if (was_punct) {
+                *b++ = '_';
+            }
+            *b++ = *c;
+            was_punct = 0;
+        } else {
+            was_punct = 1;
+        }
+    }
+    *b++ = '-';
+
+    /* strips punct from keycodes */
+    was_punct = 0;
+    for (c = keycodes; *c != '\0'; c++) {
+        if (isalnum(*c)) {
+            if (was_punct) {
+                *b++ = '_';
+            }
+            *b++ = *c;
+            was_punct = 0;
+        } else {
+            was_punct = 1;
+        }
+    }
+    *b++ = '-';
+
+    /* strips parens from symbols */
+    was_punct = 0;
+    for (c = symbols; *c != '\0'; c++) {
+        if (isalnum(*c)) {
+            if (was_punct) {
+                *b++ = '_';
+            }
+            *b++ = *c;
+            was_punct = 0;
+        } else {
+            was_punct = 1;
+        }
+    }
+    *b++ = '\0';
+
+    return strdup(buf);
 }
 
 #endif /* XKBlib && XKBgeom */
