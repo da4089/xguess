@@ -72,20 +72,20 @@ char *local_guess(void) {
     }
   } else {
     if (strcmp(buf_sysinfo, "PCXAL") == 0) {
-      layout = "pc";
+      layout = "pc101";
       model  = "pcxal";
     } else if (strcmp(buf_sysinfo, "PC7XL") == 0) {
-      layout = "pc";
+      layout = "pc101";
       model  = "pc7xl";
     } else  if (strcmp(buf_sysinfo, "LK401") == 0) {
-      layout = "dec";
+      layout = "lk401";
       model  = "lk401";
     } else {
       layout = "unknown";
       model  = "unknown";
     }
 
-    sprintf(buf_output, "dec-%s-%s", layout, model);
+    sprintf(buf_output, "%s-dec-%s", layout, model);
     return strdup(buf_output);
   }
 }
