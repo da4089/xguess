@@ -36,11 +36,13 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <string.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <getopt.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
+#include "config.h"
 
 #if defined(__sun)
 extern int gethostname(char *name, int namelen);
@@ -68,9 +70,27 @@ extern int gethostname(char *name, int namelen);
 #define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
 
 
+static struct option long_options[] = 
+{
+  {"x-resolution", no_argument, NULL, 'x'},
+  {"y-resolution", no_argument, NULL, 'y'},
+  {"depth", no_argument, NULL, 'z'},
+  {"manufacturer", no_argument, NULL, 'm'},
+  {"num-screens", no_argument, NULL, 'n'},
+  {"release", no_argument, NULL, 'r'},
+  {"x-version", no_argument, NULL, 'v'},
+  {"screen", required_argument, NULL, 's'},
+  {"version", no_argument, NULL, 'V'},
+  {"help", no_argument, NULL, 'h'},
+  {0, 0, 0, 0}
+};
+
+static int screen_number = 0;
+
+
 /****************************************************************/
 
-#if !defined(__sun) && !defined(__alpha)
+#if !defined(__sun) && !defined(__alpha) && 0
 
 char *local_guess(void) {
   return (char *)NULL;
@@ -393,69 +413,97 @@ void keyboard_guess(Display *display) {
 void main(int argc, char *argv[]) {
   Display  *display;
   char     *display_name;
-  char     *optarg;
-  int      optind;
-  int      opterr;
-  int      optopt;
   int      c = 0;
+  int      operation = 0;
+  int      long_index = 0;
 
-  /*-- assign to vars to prevent 'unused variable' errors */
-  optarg = NULL;
-  optind = 0;
-  opterr = 0;
-  optopt = 0;
+  /*-- parse arguments and decide what to do */
+  while (operation == 0) {
+    c = getopt_long(argc, argv, "xyzmnrs:vkhV", long_options, &long_index);
+    switch (c) {
+    case 's':
+      screen_number = strtol(optarg, NULL, 10);
+      break;
+    case 'x':
+    case 'y':
+    case 'z':
+    case 'm':
+    case 'n':
+    case 'r':
+    case 'v':
+    case 'k':
+      if (operation) {
+	usage(argv[0]);
+	exit(1);
+      }
+      operation = c;
+      break;
 
-  if (argc != 2) {
-    usage(argv[0]);
+    case 'h':
+      usage(argv[0]);
+      exit(0);
+    case 'V':
+      printf("%s\n", VERSION);
+      exit(0);
+    case -1:
+      operation = -1;
+      break;
+    case '?':
+      usage(argv[0]);
+      exit(1);
+    }
   }
 
-  /*-- check that we have a DISPLAY environment variable */
+  /* check whether operation is set yet */
+  if (operation < 1) {
+    usage(argv[0]);
+    exit(1);
+  }
 
+  /* check that we have a DISPLAY environment variable */
   if (!(display_name = getenv(DISPLAY))) {
     fprintf(stderr, "Cannot locate display - DISPLAY variable not set.\n\n");
     exit(1);
   }
 
-  /*-- check that we have access to the display */
-
+  /* check that we have access to the display */
   if (!(display = XOpenDisplay(display_name))) {
     fprintf(stderr, "Cannot open display from DISPLAY variable.\n\n");
     exit(1);
   }
-  
-  /*-- parse arguments and decide what to do */
 
-  if ((c = getopt(argc, argv, "xyzmnrvkh")) != -1) {
-    switch (c) {
-    case 'x':
-      printf("%d\n", DisplayWidth(display,0));
-      break;
-    case 'y':
-      printf("%d\n", DisplayHeight(display,0));
-      break;
-    case 'z':
-      printf("%d\n", DefaultDepth(display,0));
-      break;
-    case 'm':
-      printf("%s\n", ServerVendor(display));
-      break;
-    case 'n':
-      printf("%s\n", ScreenCount(display));
-      break;
-    case 'r':
-      printf("%d\n", VendorRelease(display));
-      break;
-    case 'v':
-      printf("%d.%d\n", ProtocolVersion(display), ProtocolRevision(display));
-      break;
-    case 'k':
-      keyboard_guess(display);
-      break;
-    default:
-      usage(argv[0]);
-    }
-  } else {
+  /* check screen number */
+  if (screen_number >= ScreenCount(display)) {
+    fprintf(stderr, "cannot use screen %d, only %d screen(s) available.\n", screen_number, ScreenCount(display));
     usage(argv[0]);
+    exit(1);
+  }
+
+  switch (operation) {
+  case 'x':
+    printf("%d\n", DisplayWidth(display, screen_number));
+    break;
+  case 'y':
+    printf("%d\n", DisplayHeight(display, screen_number));
+    break;
+  case 'z':
+    printf("%d\n", DefaultDepth(display, screen_number));
+    break;
+  case 'm':
+    printf("%s\n", ServerVendor(display));
+    break;
+  case 'n':
+    printf("%d\n", ScreenCount(display));
+    break;
+  case 'r':
+    printf("%d\n", VendorRelease(display));
+    break;
+  case 'v':
+    printf("%d.%d\n", ProtocolVersion(display), ProtocolRevision(display));
+    break;
+  case 'k':
+    keyboard_guess(display);
+    break;
   }
 
   exit(0);
