@@ -32,6 +32,8 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #endif
 
 
+static char *xguess_ultrix_dummy = "warning prevention";
+
 #if defined(__ultrix) || defined(ultrix)	/* whole file */
 
 

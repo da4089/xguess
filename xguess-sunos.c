@@ -16,6 +16,8 @@
    that conflicts with our own...
  */
 
+static char *xguess_sunos_dummy = "warning prevention";
+
 #if defined(__sun) || defined(sun)	/* whole file */
 
 #include <stdlib.h>
