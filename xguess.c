@@ -135,12 +135,13 @@ int is_local_server(Display *display) {
 
 
 void usage(char *argv0) {
-  fprintf(stderr, "Usage: %s -x|-y|-z|-m|-r|-v|-k|-h\n", argv0);
+  fprintf(stderr, "Usage: %s -x|-y|-z|-m|-n|-r|-v|-k|-h\n", argv0);
   fprintf(stderr, "where\n");
   fprintf(stderr, "       -x horizontal resolution\n");
   fprintf(stderr, "       -y vertical resolution\n");
   fprintf(stderr, "       -z colour depth (bits/pixel)\n");
   fprintf(stderr, "       -m X server manufacturer\n");
+  fprintf(stderr, "       -n number of screens on X server\n");
   fprintf(stderr, "       -r X server manufacturer release number\n");
   fprintf(stderr, "       -v version of X protocol\n");
   fprintf(stderr, "       -k keyboard type string. NOTE: must be run\n");
@@ -424,7 +425,7 @@ void main(int argc, char *argv[]) {
   
   /*-- parse arguments and decide what to do */
 
-  if ((c = getopt(argc, argv, "xyzmrvkh")) != -1) {
+  if ((c = getopt(argc, argv, "xyzmnrvkh")) != -1) {
     switch (c) {
     case 'x':
       printf("%d\n", DisplayWidth(display,0));
@@ -437,6 +438,9 @@ void main(int argc, char *argv[]) {
       break;
     case 'm':
       printf("%s\n", ServerVendor(display));
+      break;
+    case 'n':
+      printf("%s\n", ScreenCount(display));
       break;
     case 'r':
       printf("%d\n", VendorRelease(display));
