@@ -1,0 +1,6 @@
+xguess
+
+xguess is a small utility designed to report various properties of an
+X server for use in setting up a user's environment.  It is
+particularly useful for those who use a unified environment across
+multiple different machines.

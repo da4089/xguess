@@ -4,7 +4,7 @@
 #
 # File:        $Source$
 # Version:     $RCSfile$ $Revision$
-# Copyright:   (C) 1998-2000, David Arnold.
+# Copyright:   (C) 1998-2003, David Arnold.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
