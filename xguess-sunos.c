@@ -67,68 +67,84 @@ extern char *strdup (const char *);
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
 
-#if defined(__SVR4)                     /* Solaris 2.x */
+#if defined(__SVR4)                     /* SunOS >= 5.0.0 */
 #include <sys/vuid_event.h>
 #include <sys/kbio.h>
 #include <sys/kbd.h>
-#else                                   /* SunOS 4.x.x */
+#else                                   /* SunOS <= 4.1.4 */
 #include <sundev/vuid_event.h>
 #include <sundev/kbio.h>
 #include <sundev/kbd.h>
 #endif
 
 char *local_guess(void) {
-  int type = -1, layout = 0;
-  int kbdfd;
+  int   type = -1, layout = 0;
+  int   kbdfd;
+  char  *unknown;
 
-  if ((kbdfd = open ("/dev/kbd", O_WRONLY)) <= 0)
-    return 0;
+  unknown = strdup("unknown-sun-unknown");
+
+  if ((kbdfd = open ("/dev/kbd", O_WRONLY)) <= 0) {
+    printf("open failed ...\n");
+    return unknown;
+  }
 
   /* See /usr/man/man4/kb.4m on SunOS 4.1.3 */
 
   if (ioctl (kbdfd, KIOCTYPE, &type))
     {
       close (kbdfd);
-      return 0;
+      printf("couldn't get type ...\n");
+      return unknown;
     }
   ioctl (kbdfd, KIOCLAYOUT, &layout);
   close (kbdfd);
+
   switch (type) {
-  case -1:	  return 0;
-  case KB_ASCII:  return "SunASCII";	/* Ascii terminal */
-  case KB_KLUNK:  return "MS103SD32-2";	/* Micro Switch 103SD32-2 */
-  case KB_VT100:  return "SunVT100";	/* Keytronics VT100 compatible */
-  case KB_VT220:  return "SunVT220";	/* vt220 Emulation */
-  case KB_VT220I: return "SunVT220i";	/* International vt220 Emulation */
-  case KB_SUN2:   return "Sun2";
-  case KB_SUN3:   return "Sun3";
+  case -1:
+    return unknown;
+  case KB_ASCII:	  /* Ascii terminal */
+    return strdup("ascii-sun-ascii");
+  case KB_KLUNK:          /* Micro Switch 103SD32-2 */
+    return strdup("ascii-sun-ms103sd32-2");
+  case KB_VT100:          /* Keytronics VT100 */
+    return strdup("vt100-sun-vt100");
+  case KB_VT220:          /* vt220 Emulation */
+    return strdup("vt220-sun-vt220");
+  case KB_VT220I:    	  /* International vt220 */
+    return strdup("vt220-sun-vt220i");
+  case KB_SUN2:
+    return strdup("sun2-sun-sun2");
+  case KB_SUN3:
+    return strdup("sun3-sun-sun3");
+
   case KB_SUN4:
     switch (layout) {
-    case  0: return "Sun4"; /* Part 320-1005-02 REV A. */
-    case  1: return "Sun4"; /* Part 320-1005-01 REV B.  Seems identical... */
+    case  0: return strdup("type4-sun-sun4");     /* Part 320-1005-02 REV A. */
+    case  1: return strdup("type4-sun-sun4");     /* Part 320-1005-01 REV B. */
 
-    case  2: return "Sun4FR";			/* French/Belgian */
-    case  3: return "Sun4CA";			/* Canadian	*/
-    case  4: return "Sun4DK";			/* Danish	*/
-    case  5: return "Sun4DE";			/* German	*/
-    case  6: return "Sun4IT";			/* Italian	*/
-    case  7: return "Sun4DU";			/* Dutch	*/
-    case  8: return "Sun4NO";			/* Norwegian	*/
-    case  9: return "Sun4PO";			/* Portuguese	*/
-    case 10: return "Sun4ES";			/* Spanish	*/
-    case 11: return "Sun4SW";			/* Swedish/Finnish */
-    case 12: return "Sun4SWFR";			/* Swiss/French	*/
-    case 13: return "Sun4SWDE";			/* Swiss/German	*/
-    case 14: return "Sun4UK";			/* UK		*/
+    case  2: return strdup("type4-sun-sun4fr");   /* French/Belgian */
+    case  3: return strdup("type4-sun-sun4ca");	  /* Canadian	*/
+    case  4: return strdup("type4-sun-sun4dk");	  /* Danish	*/
+    case  5: return strdup("type4-sun-sun4de");	  /* German	*/
+    case  6: return strdup("type4-sun-sun4it");	  /* Italian	*/
+    case  7: return strdup("type4-sun-sun4du");	  /* Dutch	*/
+    case  8: return strdup("type4-sun-sun4no");	  /* Norwegian	*/
+    case  9: return strdup("type4-sun-sun4po");	  /* Portuguese	*/
+    case 10: return strdup("type4-sun-sun4ed");	  /* Spanish	*/
+    case 11: return strdup("type4-sun-sun4sw");	  /* Swedish/Finnish */
+    case 12: return strdup("type4-sun-sun4swfr"); /* Swiss/French */
+    case 13: return strdup("type4-sun-sun4swde"); /* Swiss/German */
+    case 14: return strdup("type4-sun-sun4uk");   /* UK		*/
       /* 15 unknown */
-    case 16: return "Sun4KO";			/* Korean	*/
-    case 17: return "Sun4TA";			/* Taiwanese	*/
+    case 16: return strdup("type4-sun-sun4ko");	  /* Korean	*/
+    case 17: return strdup("type4-sun-sun4ta");	  /* Taiwanese	*/
       /* 18 unknown */
-    case 19: return "Sun101A";			/* US		*/
+    case 19: return strdup("pc101-sun-sun101a");  /* US		*/
       /* The Sun101A was apparently an early version
 	 of the Sun5 kbd: it didn't last very long. */
       /* 20-31 unknown */
-    case 32: return "Sun4JA";			/* Japanese	*/
+    case 32: return strdup("type4-sun-sun4ja");	  /* Japanese	*/
 
       /* It appears that there is no such keyboard as (for example) Sun5PCDE,
 	 or any non-US version of the sun5PC keyboard.  I guess non-US versions
@@ -136,37 +152,39 @@ char *local_guess(void) {
 	 stuff in /usr/share/lib/keytables/ doesn't provide for that
 	 possibility either. */
 
-    case 33: return "Sun5PC";			/* US		*/
-    case 34: return "Sun5";			/* US		*/
-    case 35: return "Sun5FR";			/* French	*/
-    case 36: return "Sun5DA";			/* Danish	*/
-    case 37: return "Sun5DE";			/* German	*/
-    case 38: return "Sun5IT";			/* Italian	*/
-    case 39: return "Sun5DU";			/* Dutch	*/
-    case 40: return "Sun5NO";			/* Norwegian	*/
-    case 41: return "Sun5PO";			/* Portuguese	*/
-    case 42: return "Sun5ES";			/* Spanish	*/
-    case 43: return "Sun5SW";			/* Swedish	*/
-    case 44: return "Sun5SWFR";			/* Swiss/French	*/
-    case 45: return "Sun5SWDE";			/* Swiss/German	*/
-    case 46: return "Sun5UK";			/* UK		*/
-    case 47: return "Sun5KO";			/* Korean	*/
-    case 48: return "Sun5TA";			/* Taiwanese	*/
-    case 49: return "Sun5JA";			/* Japanese	*/
+    case 33: return strdup("type5-sun-sun5pc");   /* US		*/
+    case 34: return strdup("type5-sun-sun5");     /* US		*/
+    case 35: return strdup("type5-sun-sun5fr");   /* French	*/
+    case 36: return strdup("type5-sun-sun5da");   /* Danish	*/
+    case 37: return strdup("type5-sun-sun5de");	  /* German	*/
+    case 38: return strdup("type5-sun-sun5it");   /* Italian	*/
+    case 39: return strdup("type5-sun-sun5du");   /* Dutch	*/
+    case 40: return strdup("type5-sun-sun5no");   /* Norwegian	*/
+    case 41: return strdup("type5-sun-sun5po");   /* Portuguese	*/
+    case 42: return strdup("type5-sun-sun5es");   /* Spanish	*/
+    case 43: return strdup("type5-sun-sun5sw");   /* Swedish	*/
+    case 44: return strdup("type5-sun-sun5swfr"); /* Swiss/French	*/
+    case 45: return strdup("type5-sun-sun5swde"); /* Swiss/German	*/
+    case 46: return strdup("type5-sun-sun5uk");   /* UK		*/
+    case 47: return strdup("type5-sun-sun5ko");   /* Korean	*/
+    case 48: return strdup("type5-sun-sun5ta");   /* Taiwanese	*/
+    case 49: return strdup("type5-sun-sun5ja");   /* Japanese	*/
+
     default:
       {
 	char buf [255];
-	sprintf (buf, "Sun4_%d", layout);
+	sprintf (buf, "unknown-sun-sun4%d", layout);
 	return strdup (buf);
       }
     }
+
   default:
     {
       char buf [255];
       if (layout)
-	sprintf (buf, "Sun_%d_%d", type, layout);
+	sprintf (buf, "unknown-sun-%d_%d", type, layout);
       else
-	sprintf (buf, "Sun_%d", type);
+	sprintf (buf, "unknown-sun-%d", type);
       return strdup (buf);
     }
   }
@@ -177,7 +195,7 @@ char *local_guess(void) {
 void
 main (void)
 {
-  printf ("%s\n", xkeycaps_guess_local_keyboard_type ());
+  printf ("%s\n", local_guess());
   exit (0);
 }
 #endif /* DEBUG */
