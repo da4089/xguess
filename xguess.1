@@ -1,0 +1,193 @@
+.\" ***************************************************************
+.\" 
+.\"   Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995, 1997.
+.\"   Unpublished work.  All Rights Reserved.
+.\" 
+.\"   The software contained on this media is the property of the
+.\"   DSTC Pty Ltd.  Use of this software is strictly in accordance
+.\"   with the license agreement in the accompanying LICENSE.DOC
+.\"   file.  If your distribution of this software does not contain
+.\"   a LICENSE.DOC file then you have no rights to use this
+.\"   software in any manner and should contact DSTC at the address
+.\"   below to determine an appropriate licensing arrangement.
+.\" 
+.\"      DSTC Pty Ltd
+.\"      Level 7, Gehrmann Labs
+.\"      University of Queensland
+.\"      St Lucia, 4072
+.\"      Tel: +61 7 3365 4310
+.\"      Fax: +61 7 3365 4311
+.\"      Email: enquiries@dstc.edu.au
+.\" 
+.\"   This software is being provided "AS IS" without warranty of
+.\"   any kind, and DSTC Pty Ltd disclaims all warranties.
+.\" 
+.\" 
+.\"   Project:  Hector
+.\"   File:     $Source$
+.\"
+.\" ***************************************************************
+.\" 
+.\" name sect foot-centre foot-left  head-centre   origin  architecture
+.TH xguess 1  "1997 July"  "DSTC"  "User Commands" "DSTC" "Hector Project"
+.SH NAME
+xguess \- determine information about your X server
+.SH SYNOPSIS
+.B "xguess"
+\-xyzmrvkh
+.SH FLAGS
+.PP
+Flags are all exclusive.
+.TP 4
+\-h
+prints a simple description of legal syntax and functions.
+.TP 4
+\-k
+attempts to determine the type of keyboard attached to the X server
+for the default display and screen.  Returns an identification string
+in the format 
+.I layout\-vendor\-model
+.PP
+.RS 4
+Currently supported keyboard layouts
+.IP lk201 8
+Digital LK-201 used on DECStation 3100's and other older machines.
+.IP lk401 8
+Digital LK-401 used on DECStation 5000's and early Alpha's.
+.IP pc101 8
+Standard PC layout (introduced with IBM PC/AT)
+.IP pc84 8
+IBM PC and PC/XT layout
+.IP type3 8
+Sun Type 3 layout used for later Sun3 systems
+.IP type4 8
+Sun Type 4 layout used on early Sun4 systems
+.IP type5 8
+Sun Type 5 layout used on current Sun4 systems
+.RE
+.PP
+.RS 4
+Currently supported vendors
+.IP dec 8
+Digital Equipment Corporation.  Models include lk201, lk401, pcxal,
+pc7xl.
+.IP sun 8
+Sun Microsystems. Models include type3, type4, type5 (with various
+national variations).
+.IP ncd 8
+Network Computing Devices.  Models include n97, n101, n102, n107,
+n108.
+.IP ibm 8
+International Business Machines.  Model 5168572M only.
+.RE
+.PP
+.TP 4
+\-m
+returns the manufacturer string from the X server for the default
+display and screen.
+.TP 4
+\-r
+returns the manufacturer's release number from the X server for the
+default display and screen.  For X Consortium servers, this is the
+release number of X11 (eg. 6000 == X11R6), but this does not apply to
+all vendors.
+.TP 4
+\-v
+returns protocol major and minor versions supported by the X server
+for the default display and screen.  Note that this is 11.0 for
+X11R[456].
+.TP 4
+\-x
+returns the horizontal resolution of the default display and screen.
+.TP 4
+\-y
+returns the vertical resolution of the default display and screen.
+.TP 4
+\-z
+returns the maximum pixel depth of the default display and screen.
+.SH DESCRIPTION
+.PP
+.B xguess
+attempts to determine information about an X server.  It is designed
+to be used in a
+.I .xsession
+file (see
+.I xdm(1X)
+) to enable display configuration on a platform-independent
+basis.  Results are printed to
+.I stdout
+and can then be used in environment variables, etc.
+.SH EXIT CODES
+.PP
+.TP 8
+0
+Returned a result with no errors detected.
+.TP 8
+1
+Returned after detecting an error.  The result could be unreliable.
+.SH EXAMPLE
+.PP
+An extract from a sample 
+.I .xsession
+file showing some uses of
+.B xguess
+.PP
+.EX 4
+#!/bin/csh
+
+##  what sort of X Server am I using?
+setenv XRES     "`xres -x`"
+setenv YRES     "`xres -y`"
+setenv XSERVER  "`xres -m`"
+setenv XKEYBOARD "`xres -k`"
+
+##  run appropriate XMODMAPRC
+if ( -e $HOME/.xmodmaprc.$XKEYBOARD ) then
+  xmodmap $HOME/.xmodmaprc.$XKEYBOARD
+else
+  xmodmap $HOME/.xmodmaprc.unknown
+endif
+
+##  biff next to TVTWM panner
+##  (virtual WM: can't use geometry -300+0)
+xbiff  -geometry +`expr $XRES - 300`+0 &
+tvtwmrc -f $HOME/.tvtwmrc
+.EE
+.SH ENVIRONMENT
+.PP
+.TP 4
+.B "DISPLAY"
+To get the default host, display number, and screen.
+.SH "SEE ALSO"
+.PP
+.I xdpyinfo(1X), 
+.I xdm(1X) 
+.SH COPYRIGHT
+.PP
+Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995, 1997.
+.br
+All Rights Reserved.
+ 
+The software contained on this media is the property of the
+DSTC Pty Ltd.  Use of this software is strictly in accordance
+with the license agreement in the accompanying LICENSE.DOC
+file.  If your distribution of this software does not contain
+a LICENSE.DOC file then you have no rights to use this
+software in any manner and should contact DSTC at the address
+below to determine an appropriate licensing arrangement.
+ 
+   DSTC Pty Ltd
+   Level 7, Gehrmann Labs
+   University of Queensland
+   St Lucia, 4072
+   Tel: +61 7 3365 4310
+   Fax: +61 7 3365 4311
+   Email: enquiries@dstc.edu.au
+ 
+This software is being provided "AS IS" without warranty of
+any kind, and DSTC Pty Ltd disclaims all warranties.
+.SH AUTHOR
+.PP
+David Arnold, (davida@pobox.com)
+.\" ***************************************************************
+ 
