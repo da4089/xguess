@@ -5,7 +5,7 @@
  *
  * File:        $Source$
  * Version:     $RCSfile$ $Revision$
- * Copyright:   (C) 1995-2003 David Arnold.
+ * Copyright:   (C) 1995-2004 David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -262,8 +262,8 @@ char *ncd_guess(Display *display)
  *
  *  We use a combination of methods:
  *  1) test whether the server supported the Keyboard Extension, and
- *     if so query it's registered geometry information.  this works
- *     really well for XFree86.
+ *     if so query its registered geometry information.  this works
+ *     really well for XFree86, so long as you're using XKB.
  *
  *  2) check whether the display is local.  If so, we can possibly
  *     probe the keyboard hardware directly to determine what type
@@ -273,7 +273,7 @@ char *ncd_guess(Display *display)
  *     platform-specific function which tests the keyboard
  *     hardware.  A default routine returns no result.
  *
- *  3) check the manufacturer string of the X server.  Known values are
+ *  3) check the manufacturer string of the X server.
  *
  *     This gives us some idea of what keyboards might be attached,
  *     and in particular, what keymaps might be in use so that we
@@ -284,7 +284,7 @@ char *ncd_guess(Display *display)
  *     could be set by default, but it often works ...
  *
  *  Finally we try to pick a generic type of keyboard (PC, LK401,
- *  Type5) by the present of certain KeySyms.  This will at least
+ *  Type5) by the presence of certain KeySyms.  This will at least
  *  let you set up some default mappings.
  *
  *  This function returns a string with the following format:
@@ -318,7 +318,6 @@ char *ncd_guess(Display *display)
  *  type suffix which is very important!
  *
  *  these aren't itemised, since there are lots of them and i'm too lazy.
- *
  */
 
 char *keyboard_guess(Display *display) {
@@ -411,7 +410,7 @@ char *keyboard_guess(Display *display) {
     }
   }
 
-  /*-- no idea? try to decide generic type at least ...  */
+  /*-- no idea? guesswork time ... */
 
   k.keycode = 120;  /* Compose_R on an NCD DEC-style keyboard */
                     /* 'F1' on an IBM PC-style */
