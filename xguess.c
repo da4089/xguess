@@ -38,6 +38,7 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 
 
 /****************************************************************/
@@ -56,6 +57,9 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #define X_R4       "MIT X Consortium"
 #define X_R5       "MIT X Consortium"
 #define X_R6       "X Consortium"
+
+
+#define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
 
 
 /****************************************************************/
@@ -163,6 +167,37 @@ void usage(char *argv0) {
   Finally we try to pick a generic type of keyboard (PC, LK401,
   Type5) by the present of certain KeySyms.  This will at least
   let you set up some default mappings.
+
+  This function returns a string with the following format:
+
+  layout-vendor-model
+
+  where layout is a general indication of the keyboard style and has
+  one of these values
+
+  lk201   - a DEC LK201 (single Control, single Compose, no Alt or Meta)
+  lk401   - a DEC LK401 (single Control, two Compose, two Alt)
+  pc101   - generic PC layout
+  type4   - a Sun Type4 layout
+  type5   - a Sun Type5 layout
+  unknown - oops!  no idea, sorry.
+
+  the vendor string is not really that important, except where very
+  minor differences are present.
+
+  dec     - Digital Equipment Corporation
+  ibm     - Internation Business Machines
+  ncd     - Network Computing Devices
+  sun     - Sun Microsystems
+  unknown - no way to tell.  this is normally the case with Linux, FreeBSD
+            and other PC-based Unices.
+
+  finally, there is a model number.  quite often this is just a repeat
+  of the general type layout, although it can have a national language
+  type suffix which is very important!
+
+  these aren't itemised, since there are lots of them and i'm too lazy.
+
  */
 
 void keyboard_guess(Display *display) {
@@ -215,39 +250,74 @@ void keyboard_guess(Display *display) {
        n108us or n108de       - Digital LK401 layout (US and German models)
        vt220                  - Digital LK201 layout
 
-       Detection is hard, since the keycode mapping is normally
-       supplied by the X client which can ignore the fact that it's
-       not one of their displays on the end, and map things all over
-       the place.  For example, hosting a NCD off a Digital Unix box
-       will give you the impression that there is an LK401 atttached,
-       regardless of what is really there ...
-
-       I think the solution (here it comes ...) is to figure out a way
-       to talk to the NCD-SETUP extension that is loaded into the X
-       server on all NCDs.  I imagine that this has the ability to
-       extract the same keyboard info that their setup app does, and
-       *it* can tell you what keyboard is attached ...
+       NCD, helpful people that they are (thanks Ken Johnson!) put the
+       keyboard type as a property on the root window.
     */
+    Atom ncd_atom, actual_type_return;
+    int  res, actual_format_return;
+    unsigned long nitems_return, bytes_after_return;
+    unsigned char *buf;
+
+    /* get the atom number for the NCD keyboard property */
+    ncd_atom = XInternAtom(display, NCD_KB_PROPERTY, 1); /* don't create */
+
+    if (ncd_atom != None) {
+      res = XGetWindowProperty(display,
+			       DefaultRootWindow(display),
+			       ncd_atom,
+			       0L,    /* offset 0 is start */
+			       10L,   /* number of 32bit words to return */
+			       False,    /* don't delete it! */
+			       XA_STRING,
+			       &actual_type_return,
+			       &actual_format_return,
+			       &nitems_return,
+			       &bytes_after_return,
+			       &buf); /* the actual value! */
+
+      if (res == Success) {
+	if (strcmp(buf, "N-108 US") == 0) {
+	  printf("lk401-ncd-n108us\n");
+	  return;
+
+	} else if (strcmp(buf, "N-108 DE") == 0) {
+	  printf("lk401-ncd-n108de\n");
+	  return;
+
+	} else if (strcmp(buf, "N-101") == 0) {
+	  printf("pc101-ncd-n101\n");
+	  return;
+
+	} else if (strcmp(buf, "N-97") == 0) {
+	  printf("type4-ncd-n97\n");
+	  return;
+
+	} else if (strcmp(buf, "N-102 US") == 0) {
+	  printf("pc101-ncd-n102us\n");
+	  return;
+
+	} else if (strcmp(buf, "N-107") == 0) {
+	  printf("type5-ncd-n107\n");
+	  return;
+
+	} else if (strcmp(buf, "VT-220") == 0) {
+	  printf("lk401-ncd-vt220\n");
+	  return;
+
+	} else if (strcmp(buf, "123UX") == 0) {
+	  printf("unknown-ncd-123ux\n");
+	  return;
+
+	} else if (strcmp(buf, "PC-Xview") == 0) {
+	  printf("pc101-ncd-pcxview\n");
+	  return;
+	}
+      }
+    }
 
     /* no idea, other than NCD ... */
-    printf("ncd-unknown-unknown\n");
+    printf("unknown-ncd-unknown\n");
     return;
-
-    /* old stuff that doesn't work ... */
-    k.keycode = 120;  /* Compose_R on an NCD DEC-style keyboard */
-                      /* 'F1' on an IBM PC-style */
-    key = XLookupKeysym(&k, 0);
-    if ((int)key == 0xff20) {
-      printf("ncd-dec-n108\n");
-      return;
-    }
-
-    k.keycode = 16;
-    key = XLookupKeysym(&k, 0);
-    if ((int)key == 0xffbe) {
-      printf("ncd-pc-n101\n");
-      return;
-    }
 
     
   } else if (strncmp(vendor, "DECWINDOWS", 10) == 0) {
@@ -261,14 +331,14 @@ void keyboard_guess(Display *display) {
       k.keycode = 9;  /* F1 on a DEC PCXAL*/
       key = XLookupKeysym(&k, 0);
       if ((int)key == 0xffbe) {
-        printf("dec-pc-pcxal\n");  /* eg. DEC AlphaStation 250 4/266 */
+        printf("pc101-dec-pcxal\n");  /* eg. DEC AlphaStation 250 4/266 */
         return;
       }
   
       k.keycode = 16;  /* F1 on a standard PC */
       key = XLookupKeysym(&k, 0);
       if ((int)key == 0xffbe) {
-        printf("unknown-pc-101\n");  /* Honeywell, DEC PC7XL, NCD N-101M */
+        printf("pc101-unknown-pc101\n");  /* Honeywell,DEC PC7XL */
         return;
       }
     }
@@ -276,14 +346,14 @@ void keyboard_guess(Display *display) {
     k.keycode = 173;  /* Compose_R on a DEC LK401 */
     key = XLookupKeysym(&k, 0);
     if ((int)key == 0xff20) {
-      printf("dec-dec-lk401\n");          /* eg. DEC 3000/400 */
+      printf("lk401-dec-lk401\n");          /* eg. DEC 3000/400 */
       return;
     }
   
     k.keycode = 194;  /* 'a' on a DEC LK201 */
     key = XLookupKeysym(&k, 0);
     if ((int)key == 0x61) {
-      printf("dec-dec-lk201\n");          /* eg. DECstation 3100 */
+      printf("lk201-dec-lk201\n");          /* eg. DECstation 3100 */
       return;
     }
   
@@ -299,7 +369,7 @@ void keyboard_guess(Display *display) {
     return;
   }
   if ((int)key == 0xffbe) {
-    printf("ibm-pc-5168572M\n");        /* IBM RS/6000 C10 */
+    printf("pc101-ibm-5168572M\n");        /* IBM RS/6000 C10 */
     return;
   }
 
