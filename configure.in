@@ -1,0 +1,31 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(xguess.c)
+AM_INIT_AUTOMAKE(xguess, 1.1)
+
+dnl Checks for programs.
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+
+dnl Checks for libraries.
+
+# Figure out where X11 lives
+AC_PATH_XTRA
+if test "$no_x" = yes ; then
+    AC_MSG_ERROR("Unable to find the X11 package")
+    exit 1
+fi
+
+# Add the X11 stuff to the places it belongs
+CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+LDFLAGS="$LDFLAGS $X_LIBS"
+LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
+
+# Check to see if we can find X libraries
+AC_CHECK_LIB(X11, XOpenDisplay)
+
+AC_CHECK_FUNCS(strdup)
+
+AM_CONFIG_HEADER(config.h)
+AC_OUTPUT(Makefile)
