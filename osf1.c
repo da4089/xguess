@@ -1,41 +1,35 @@
 /***************************************************************
- Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997.
- Unpublished work.  All Rights Reserved.
-
- The software contained on this media is the property of the DSTC
- Pty Ltd.  Use of this software is strictly in accordance with the
- license agreement in the accompanying LICENSE.DOC file.  If your
- distribution of this software does not contain a LICENSE.DOC file
- then you have no rights to use this software in any manner and
- should contact DSTC at the address below to determine an
- appropriate licensing arrangement.
-
-      DSTC Pty Ltd
-      Level 7, Gehrmann Labs
-      University of Queensland
-      St Lucia, 4072 
-      Australia
-      Tel: +61 7 3365 4310
-      Fax: +61 7 3365 4311
-      Email: enquiries@dstc.edu.au
-
- This software is being provided "AS IS" without warranty of any
- kind, and DSTC Pty Ltd disclaims all warranties.
- 
- Project:  Hector
- File:     $Source$
-
-****************************************************************/
+ *
+ *             xguess
+ *             X implementation attribute testing
+ *
+ * File:        $Source$
+ * Version:     $RCSfile$ $Revision$
+ * Copyright:   (C) 1995, 1997, 1999-2000 David Arnold.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************/
 
 #if !defined(lint)
 static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #endif
 
 
-static char *xguess_osf1_dummy = "warning prevention";
-
 #if defined(__alpha) || defined(alpha)	/* whole file */
-
+#if defined(__osf1) || defined(osf)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +40,7 @@ static char *xguess_osf1_dummy = "warning prevention";
 #include <machine/hal_sysinfo.h>
 
 
-#define BUFFER    255
+#define BUFFER    (255)
 
 
 char *local_guess(void) {
@@ -91,19 +85,10 @@ char *local_guess(void) {
 }
 
 
-#ifdef DEBUG
-
-void main (void) {
-  printf ("%s\n", local_guess());
-  exit(0);
-}
-
-#endif /* DEBUG */
-
-
-#endif /* __alpha */
+#endif /* __osf || osf */
+#endif /* __alpha || alpha*/
 
 
 /***************************************************************/
-/* end of FILE_C */
+/* end of osf1.c */
 

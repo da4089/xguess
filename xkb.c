@@ -1,13 +1,35 @@
-/*
+/***************************************************************
  *
- */
+ *             xguess
+ *             X implementation attribute testing
+ *
+ * File:        $Source$
+ * Version:     $RCSfile$ $Revision$
+ * Copyright:   (C) 2000 David Arnold.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************/
 
 #if !defined(lint)
 static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #endif
 
-#if defined(__linux) || defined(linux)	/* whole file */
-#define XGUESS_KEYBOARD     (1)
+
+#if defined(HAVE_X11_XKBLIB_H) && defined(HAVE_X11_EXTENSIONS_XKBGEOM_H)
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +39,7 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
+#include <X11/extensions/XKBgeom.h>
 
 static error_handler(Display *dpy, XErrorEvent err) {
   printf("got an error\n");
@@ -25,7 +48,7 @@ static error_handler(Display *dpy, XErrorEvent err) {
 }
 
 
-char *local_guess(void) {
+char *xguess_from_xkb(void) {
   int major = XkbMajorVersion;
   int minor = XkbMinorVersion;
   int event, error, status;
@@ -34,8 +57,6 @@ char *local_guess(void) {
   XkbDescPtr kbd;
   char *keycodes, *geometry, *types, *symbols, *s;
   char buf[1023];
-
-  printf("hello kitty\n");
 
   /* check version, extension and open display */
   display = XkbOpenDisplay(display_name, &event, &error, &major,  &minor, &status);
@@ -59,47 +80,27 @@ char *local_guess(void) {
     return NULL;
   }
 
+  /* trap errors */
   XSetErrorHandler(error_handler);
 
+  /* get keyboard description from server */
   kbd = XkbGetKeyboard(display, XkbAllComponentsMask, XkbUseCoreKbd);
   if (kbd == NULL) {
-    fprintf(stderr, "get kbd died.\n");
+    fprintf(stderr, "XkbGetKeyboard failed..\n");
     return NULL;
   }
 
+  /* look up attributes */
   keycodes = XGetAtomName(display, kbd->names->keycodes);
-  printf("keycodes: %s\n", keycodes);
-
-  geometry = XGetAtomName(display, kbd->names->geometry);
-  printf("geometry: %s\n", geometry);
-
-  types = XGetAtomName(display, kbd->names->types);
-  printf("types: %s\n", types);
-
-  s = XGetAtomName(display, kbd->names->phys_symbols);
-  printf("phys_symbols: %s\n", s);
-
+  geometry = XGetAtomName(display, kbd->geom->name);
   symbols = XGetAtomName(display, kbd->names->symbols);
-  printf("symbols: %s\n", symbols);
 
-  sprintf(buf, "%s-%s-%s", symbols, keycodes, symbols);
+  sprintf(buf, "%s-%s-%s", keycodes, geometry, symbols);
   return strdup(buf);
 }
 
-
-#ifdef DEBUG
-
-int main (void) {
-  printf ("%s\n", local_guess());
-  exit(0);
-}
-
-#endif /* DEBUG */
-
-
-#endif /* __linux || linux */
-
+#endif /* XKBlib && XKBgeom */
 
 /***************************************************************/
-/* end of xguess-linux.c */
+/* end of xkb.c */
 

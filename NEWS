@@ -1,0 +1,6 @@
+v1.2
+----
+- added support for servers using the X Keyboard Extension, querying
+  the find the name of the keyboard geometry and the symbols it is
+  using.  this is mostly useful under XFree86, but i guess might work
+  elsewhere too (like IRIX? maybe even newer OSF/1?)

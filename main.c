@@ -1,31 +1,27 @@
 /***************************************************************
- Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995, 1997.
- Unpublished work.  All Rights Reserved.
- 
- The software contained on this media is the property of the DSTC
- Pty Ltd.  Use of this software is strictly in accordance with the
- license agreement in the accompanying LICENSE.DOC file.  If your
- distribution of this software does not contain a LICENSE.DOC file
- then you have no rights to use this software in any manner and
- should contact DSTC at the address below to determine an
- appropriate licensing arrangement.
- 
-      DSTC Pty Ltd
-      Level 7, Gehrmann Labs
-      University of Queensland
-      St Lucia, 4072
-      Australia
-      Tel: +61 7 3365 4310
-      Fax: +61 7 3365 4311
-      Email: enquiries@dstc.edu.au
- 
- This software is being provided "AS IS" without warranty of any
- kind, and DSTC Pty Ltd disclaims all warranties.
- 
- Project:  Hector
- File:     $Source$
-
-****************************************************************/
+ *
+ *             xguess
+ *             X implementation attribute testing
+ *
+ * File:        $Source$
+ * Version:     $RCSfile$ $Revision$
+ * Copyright:   (C) 1995, 1997, 1999-2000 David Arnold.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ ****************************************************************/
 
 #if !defined(lint)
 static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
@@ -54,6 +50,9 @@ extern int gethostname(char *name, int namelen);
 /*-- DISPLAY environment variable name */
 #define DISPLAY "DISPLAY"
 
+/*-- root window property names */
+#define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
+
 /*-- vendor ID strings */
 #define DECWINDOWS "DECWINDOWS"
 #define NCD        "Network Computing Devices Inc."
@@ -65,9 +64,6 @@ extern int gethostname(char *name, int namelen);
 #define X_R4       "MIT X Consortium"
 #define X_R5       "MIT X Consortium"
 #define X_R6       "X Consortium"
-
-/*-- root window property names */
-#define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
 
 
 static struct option long_options[] = 
@@ -88,18 +84,23 @@ static struct option long_options[] =
 static int screen_number = 0;
 
 
-/****************************************************************/
+/****************************************************************
+ *
+ *  a local_guess() function is defined by these include files
+ *  iff we know how to probe the console hardware for the 
+ *  particular operating system.  otherwise, use the dummy
+ *  function.
+ */
 
-#if defined(__linux) || defined(linux) 
+#include "linux.h"
+#include "sunos.h"
 
-extern char  *local_guess(void);
-
-#else
-
-char *local_guess(void) {
+#if ! defined(XGUESS_LOCAL)
+/* define a dummy local_guess(), since we have no clue */
+char *local_guess(void)
+{
   return (char *)NULL;
 }
-
 #endif
 
 
@@ -155,21 +156,25 @@ int is_local_server(Display *display) {
 
 
 void usage(char *argv0) {
-  fprintf(stderr, "Usage: %s -x|-y|-z|-m|-n|-r|-v|-k|-h\n", argv0);
-  fprintf(stderr, "where\n");
-  fprintf(stderr, "       -x horizontal resolution\n");
-  fprintf(stderr, "       -y vertical resolution\n");
-  fprintf(stderr, "       -z colour depth (bits/pixel)\n");
-  fprintf(stderr, "       -m X server manufacturer\n");
-  fprintf(stderr, "       -n number of screens on X server\n");
-  fprintf(stderr, "       -r X server manufacturer release number\n");
-  fprintf(stderr, "       -v version of X protocol\n");
-  fprintf(stderr, "       -k keyboard type string. NOTE: must be run\n");
-  fprintf(stderr, "          before altering mappings with xmodmap!\n");
-  fprintf(stderr, "       -h display this message\n");
-  fprintf(stderr, "\n");
+  fprintf(stderr, 
+	  "Usage: %s [-s n] -x|-y|-z|-m|-n|-r|-v|-k|-h\n"
+	  "where\n"
+	  "       -x horizontal resolution\n"
+	  "       -y vertical resolution\n"
+	  "       -z colour depth (bits/pixel)\n"
+	  "       -m X server manufacturer\n"
+	  "       -n number of screens on X server\n"
+	  "       -r X server manufacturer release number\n"
+	  "       -s screen number to use for other operations\n"
+	  "       -v version of X protocol\n"
+	  "       -k keyboard type string. NOTE: must be run\n"
+	  "          before altering mappings with xmodmap!\n"
+	  "       -V version of this program\n"
+	  "       -h display this message\n\n",
+	  argv0);
   exit(1);
 }
+
 
 /*
   Attempt to determine what sort of keyboard is attached to the Display.
@@ -306,46 +311,46 @@ void keyboard_guess(Display *display) {
 
       if (res == Success) {
 	if (strcmp(buf, "N-108 US") == 0) {
-	  printf("lk401-ncd-n108us\n");
+	  printf("ncd-lk401-n108us\n");
 	  return;
 
 	} else if (strcmp(buf, "N-108 DE") == 0) {
-	  printf("lk401-ncd-n108de\n");
+	  printf("ncd-lk401-n108de\n");
 	  return;
 
 	} else if (strcmp(buf, "N-101") == 0) {
-	  printf("pc101-ncd-n101\n");
-	  return;
-
-	} else if (strcmp(buf, "N-97") == 0) {
-	  printf("type4-ncd-n97\n");
+	  printf("ncd-pc101-n101\n");
 	  return;
 
 	} else if (strcmp(buf, "N-102 US") == 0) {
-	  printf("pc101-ncd-n102us\n");
+	  printf("ncd-pc101-n102us\n");
+	  return;
+
+	} else if (strcmp(buf, "N-97") == 0) {
+	  printf("ncd-type4-n97\n");
 	  return;
 
 	} else if (strcmp(buf, "N-107") == 0) {
-	  printf("type5-ncd-n107\n");
+	  printf("ncd-type5-n107\n");
 	  return;
 
 	} else if (strcmp(buf, "VT-220") == 0) {
-	  printf("lk401-ncd-vt220\n");
+	  printf("ncd-lk401-vt220\n");
 	  return;
 
 	} else if (strcmp(buf, "123UX") == 0) {
-	  printf("unknown-ncd-123ux\n");
+	  printf("ncd-unknown-123ux\n");
 	  return;
 
 	} else if (strcmp(buf, "PC-Xview") == 0) {
-	  printf("pc101-ncd-pcxview\n");
+	  printf("ncd-pc101-pcxview\n");
 	  return;
 	}
       }
     }
 
     /* no idea, other than NCD ... */
-    printf("unknown-ncd-unknown\n");
+    printf("ncd-unknown-unknown\n");
     return;
 
     
@@ -409,6 +414,10 @@ void keyboard_guess(Display *display) {
   exit(1);
 }
 
+
+/*
+ *   main()
+ */
 
 void main(int argc, char *argv[]) {
   Display  *display;
