@@ -85,7 +85,6 @@ char *local_guess(void) {
   unknown = strdup("unknown-sun-unknown");
 
   if ((kbdfd = open ("/dev/kbd", O_WRONLY)) <= 0) {
-    printf("open failed ...\n");
     return unknown;
   }
 
@@ -94,7 +93,6 @@ char *local_guess(void) {
   if (ioctl (kbdfd, KIOCTYPE, &type))
     {
       close (kbdfd);
-      printf("couldn't get type ...\n");
       return unknown;
     }
   ioctl (kbdfd, KIOCLAYOUT, &layout);
