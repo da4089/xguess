@@ -92,7 +92,7 @@ static int screen_number = 0;
  *  function.
  */
 
-#include "linux.h"
+#include "xkb.h"
 #include "sunos.h"
 
 #if ! defined(XGUESS_LOCAL)
@@ -155,6 +155,86 @@ int is_local_server(Display *display) {
 }
 
 
+char *ncd_guess(Display *display)
+{
+  /* an NCD XTerminal
+
+     NCD has a range of keyboard types, which are reported by their
+     setup utility.  They fall into general categories ...
+     
+     n97 n101 n102 pc-xview - PC layout
+     n107 123ux             - Sun Type5 layout
+     n108us or n108de       - Digital LK401 layout (US and German models)
+     vt220                  - Digital LK201 layout
+
+     NCD, helpful people that they are (thanks Ken Johnson!) put the
+     keyboard type as a property on the root window.
+  */
+
+  Atom ncd_atom, actual_type_return;
+  int  res, actual_format_return;
+  unsigned long nitems_return, bytes_after_return;
+  unsigned char *buf;
+  char *type = NULL;
+
+  /* get the atom number for the NCD keyboard property */
+  ncd_atom = XInternAtom(display, NCD_KB_PROPERTY, 1); /* don't create */
+
+  if (ncd_atom != None) {
+    res = XGetWindowProperty(display,
+			     DefaultRootWindow(display),
+			     ncd_atom,
+			     0L,    /* offset 0 is start */
+			     10L,   /* number of 32bit words to return */
+			     False,    /* don't delete it! */
+			     XA_STRING,
+			     &actual_type_return,
+			     &actual_format_return,
+			     &nitems_return,
+			     &bytes_after_return,
+			     &buf); /* the actual value! */
+
+    if (res == Success) {
+      if (strcmp(buf, "N-108 US") == 0) {
+	type = strdup("lk401-ncd-n108us");
+
+      } else if (strcmp(buf, "N-108 DE") == 0) {
+	type = strdup("lk401-ncd-n108de");
+
+      } else if (strcmp(buf, "N-101") == 0) {
+	type = strdup("pc101-ncd-n101");
+
+      } else if (strcmp(buf, "N-102 US") == 0) {
+	type = strdup("pc101-ncd-n102us");
+
+      } else if (strcmp(buf, "N-97") == 0) {
+	type = strdup("type4-ncd-n97");
+
+      } else if (strcmp(buf, "N-107") == 0) {
+	type = strdup("type5-ncd-n107");
+
+      } else if (strcmp(buf, "VT-220") == 0) {
+	type = strdup("lk401-ncd-vt220");
+
+      } else if (strcmp(buf, "123UX") == 0) {
+	type = strdup("unknown-ncd-123ux");
+
+      } else if (strcmp(buf, "PC-Xview") == 0) {
+	type = strdup("pc101-ncd-pcxview");
+
+      } else if (strcmp(buf, "IBM PS/2") == 0) {
+	type = strdup("unknown-ncd-ps2");
+
+      } else {
+  	type = strdup("unknown-ncd-");
+  	strcat(type, buf);
+      }
+    }
+  }
+  return type;
+}
+
+
 void usage(char *argv0) {
   fprintf(stderr, 
 	  "Usage: %s [-s n] -x|-y|-z|-m|-n|-r|-v|-k|-h\n"
@@ -177,74 +257,83 @@ void usage(char *argv0) {
 
 
 /*
-  Attempt to determine what sort of keyboard is attached to the Display.
-
-  We use a combination of methods:
-  1) check whether the display is local.  If so, we can possibly
-     probe the keyboard hardware directly to determine what type
-     it is.
-
-     We use conditional compilation to replace a
-     platform-specific function which tests the keyboard
-     hardware.  A default routine returns no result.
-
-  2) check the manufacturer string of the X server.  Known values are
-
-     This gives us some idea of what keyboards might be attached,
-     and in particular, what keymaps might be in use so that we
-     can test the default KeyCode->KeySym mappings.
-
-  3) If no other info is about, then start testing for KeySyms
-     and KeyCode mappings.  This is flawed, since any mapping
-     could be set by default, but it often works ...
-
-  Finally we try to pick a generic type of keyboard (PC, LK401,
-  Type5) by the present of certain KeySyms.  This will at least
-  let you set up some default mappings.
-
-  This function returns a string with the following format:
-
-  layout-vendor-model
-
-  where layout is a general indication of the keyboard style and has
-  one of these values
-
-  lk201   - a DEC LK201 (single Control, single Compose, no Alt or Meta)
-  lk401   - a DEC LK401 (single Control, two Compose, two Alt)
-  pc101   - generic PC layout
-  type4   - a Sun Type4 layout
-  type5   - a Sun Type5 layout
-  unknown - oops!  no idea, sorry.
-
-  the vendor string is not really that important, except where very
-  minor differences are present.
-
-  dec     - Digital Equipment Corporation
-  ibm     - Internation Business Machines
-  ncd     - Network Computing Devices
-  sun     - Sun Microsystems
-  unknown - no way to tell.  this is normally the case with Linux, FreeBSD
-            and other PC-based Unices.
-
-  finally, there is a model number.  quite often this is just a repeat
-  of the general type layout, although it can have a national language
-  type suffix which is very important!
-
-  these aren't itemised, since there are lots of them and i'm too lazy.
-
+ *  keyboard_guess
+ *
+ *  Attempt to determine what sort of keyboard is attached to the Display.
+ *
+ *  We use a combination of methods:
+ *  1) test whether the server supported the Keyboard Extension, and
+ *     if so query it's registered geometry information.  this works
+ *     really well for XFree86.
+ *
+ *  2) check whether the display is local.  If so, we can possibly
+ *     probe the keyboard hardware directly to determine what type
+ *     it is.
+ *
+ *     We use conditional compilation to replace a
+ *     platform-specific function which tests the keyboard
+ *     hardware.  A default routine returns no result.
+ *
+ *  3) check the manufacturer string of the X server.  Known values are
+ *
+ *     This gives us some idea of what keyboards might be attached,
+ *     and in particular, what keymaps might be in use so that we
+ *     can test the default KeyCode->KeySym mappings.
+ *
+ *  4) If no other info is about, then start testing for KeySyms
+ *     and KeyCode mappings.  This is flawed, since any mapping
+ *     could be set by default, but it often works ...
+ *
+ *  Finally we try to pick a generic type of keyboard (PC, LK401,
+ *  Type5) by the present of certain KeySyms.  This will at least
+ *  let you set up some default mappings.
+ *
+ *  This function returns a string with the following format:
+ *
+ *  layout-vendor-model
+ *
+ *  where layout is a general indication of the keyboard style and has
+ *  one of these values
+ *
+ *  lk201   - a DEC LK201 (single Control, single Compose, no Alt or Meta)
+ *  lk401   - a DEC LK401 (single Control, two Compose, two Alt)
+ *  pc101   - generic PC layout
+ *  pc104   - later model PC layout (with menu and logo keys)
+ *  type4   - a Sun Type4 layout
+ *  type5   - a Sun Type5 layout
+ *  unknown - oops!  no idea, sorry.
+ *
+ *  the vendor string is not really that important, except where very
+ *  minor differences are present.
+ *
+ *  dec     - Digital Equipment Corporation
+ *  ibm     - Internation Business Machines
+ *  ncd     - Network Computing Devices
+ *  sun     - Sun Microsystems
+ *  xfree   - XFree86 
+ *  unknown - no way to tell.  this is normally the case with Linux, FreeBSD
+ *            and other PC-based Unices.
+ *
+ *  finally, there is a model number.  quite often this is just a repeat
+ *  of the general type layout, although it can have a national language
+ *  type suffix which is very important!
+ *
+ *  these aren't itemised, since there are lots of them and i'm too lazy.
+ *
  */
 
-void keyboard_guess(Display *display) {
+char *keyboard_guess(Display *display) {
   XKeyEvent k;
   KeySym    key;
   char      *res, *vendor;
+
+  /* does the server have the X Keyboard Extension */
 
   /*-- is hostname same as display host? */
   if (is_local_server(display)) {
     res = (char *)local_guess();
     if (res != NULL) {
-      printf("%s\n", res);
-      return;
+      return res;
     }
   }
 
@@ -274,86 +363,8 @@ void keyboard_guess(Display *display) {
     /* vanilla R6 */
 
   } else if (strcmp(vendor, NCD) == 0) {
-    /* an NCD XTerminal
+    return ncd_guess(display);
 
-       NCD has a range of keyboard types, which are reported by their
-       setup utility.  They fall into general categories ...
-
-       n97 n101 n102 pc-xview - PC layout
-       n107 123ux             - Sun Type5 layout
-       n108us or n108de       - Digital LK401 layout (US and German models)
-       vt220                  - Digital LK201 layout
-
-       NCD, helpful people that they are (thanks Ken Johnson!) put the
-       keyboard type as a property on the root window.
-    */
-    Atom ncd_atom, actual_type_return;
-    int  res, actual_format_return;
-    unsigned long nitems_return, bytes_after_return;
-    unsigned char *buf;
-
-    /* get the atom number for the NCD keyboard property */
-    ncd_atom = XInternAtom(display, NCD_KB_PROPERTY, 1); /* don't create */
-
-    if (ncd_atom != None) {
-      res = XGetWindowProperty(display,
-			       DefaultRootWindow(display),
-			       ncd_atom,
-			       0L,    /* offset 0 is start */
-			       10L,   /* number of 32bit words to return */
-			       False,    /* don't delete it! */
-			       XA_STRING,
-			       &actual_type_return,
-			       &actual_format_return,
-			       &nitems_return,
-			       &bytes_after_return,
-			       &buf); /* the actual value! */
-
-      if (res == Success) {
-	if (strcmp(buf, "N-108 US") == 0) {
-	  printf("ncd-lk401-n108us\n");
-	  return;
-
-	} else if (strcmp(buf, "N-108 DE") == 0) {
-	  printf("ncd-lk401-n108de\n");
-	  return;
-
-	} else if (strcmp(buf, "N-101") == 0) {
-	  printf("ncd-pc101-n101\n");
-	  return;
-
-	} else if (strcmp(buf, "N-102 US") == 0) {
-	  printf("ncd-pc101-n102us\n");
-	  return;
-
-	} else if (strcmp(buf, "N-97") == 0) {
-	  printf("ncd-type4-n97\n");
-	  return;
-
-	} else if (strcmp(buf, "N-107") == 0) {
-	  printf("ncd-type5-n107\n");
-	  return;
-
-	} else if (strcmp(buf, "VT-220") == 0) {
-	  printf("ncd-lk401-vt220\n");
-	  return;
-
-	} else if (strcmp(buf, "123UX") == 0) {
-	  printf("ncd-unknown-123ux\n");
-	  return;
-
-	} else if (strcmp(buf, "PC-Xview") == 0) {
-	  printf("ncd-pc101-pcxview\n");
-	  return;
-	}
-      }
-    }
-
-    /* no idea, other than NCD ... */
-    printf("ncd-unknown-unknown\n");
-    return;
-
-    
   } else if (strncmp(vendor, "DECWINDOWS", 10) == 0) {
     /* something with a Digital X Server */
 
@@ -365,32 +376,27 @@ void keyboard_guess(Display *display) {
       k.keycode = 9;  /* F1 on a DEC PCXAL*/
       key = XLookupKeysym(&k, 0);
       if ((int)key == 0xffbe) {
-        printf("pc101-dec-pcxal\n");  /* eg. DEC AlphaStation 250 4/266 */
-        return;
+        return strdup("pc101-dec-pcxal");  /* eg. DEC AlphaStation 250 4/266 */
       }
   
       k.keycode = 16;  /* F1 on a standard PC */
       key = XLookupKeysym(&k, 0);
       if ((int)key == 0xffbe) {
-        printf("pc101-unknown-pc101\n");  /* Honeywell,DEC PC7XL */
-        return;
+        return strdup("pc101-unknown-pc101");  /* Honeywell,DEC PC7XL */
       }
     }
   
     k.keycode = 173;  /* Compose_R on a DEC LK401 */
     key = XLookupKeysym(&k, 0);
     if ((int)key == 0xff20) {
-      printf("lk401-dec-lk401\n");          /* eg. DEC 3000/400 */
-      return;
+      return strdup("lk401-dec-lk401");          /* eg. DEC 3000/400 */
     }
   
     k.keycode = 194;  /* 'a' on a DEC LK201 */
     key = XLookupKeysym(&k, 0);
     if ((int)key == 0x61) {
-      printf("lk201-dec-lk201\n");          /* eg. DECstation 3100 */
-      return;
+      return strdup("lk201-dec-lk201");          /* eg. DECstation 3100 */
     }
-  
   }
 
   /*-- no idea? try to decide generic type at least ...  */
@@ -399,19 +405,17 @@ void keyboard_guess(Display *display) {
                     /* 'F1' on an IBM PC-style */
   key = XLookupKeysym(&k, 0);
   if ((int)key == 0xff20) {
-    printf("ncd-dec-n108lk\n");         /* vindaloo */
-    return;
+    return strdup("ncd-dec-n108lk");         /* vindaloo */
   }
+
   if ((int)key == 0xffbe) {
-    printf("pc101-ibm-5168572M\n");        /* IBM RS/6000 C10 */
-    return;
+    return strdup("pc101-ibm-5168572M");        /* IBM RS/6000 C10 */
   }
 
   /*-- give up and go home ... */
 
-  printf("unknown-unknown-unknown\n");
   fprintf(stderr, "-k option unable to determine keyboard type.\n");
-  exit(1);
+  return strdup("unknown-unknown-unknown");
 }
 
 
@@ -419,7 +423,7 @@ void keyboard_guess(Display *display) {
  *   main()
  */
 
-void main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   Display  *display;
   char     *display_name;
   int      c = 0;
@@ -506,7 +510,7 @@ void main(int argc, char *argv[]) {
     printf("%d.%d\n", ProtocolVersion(display), ProtocolRevision(display));
     break;
   case 'k':
-    keyboard_guess(display);
+    printf("%s\n", keyboard_guess(display));
     break;
   }
 
@@ -515,53 +519,5 @@ void main(int argc, char *argv[]) {
 
 
 /***************************************************************
-
-  Some sundry information about various X servers ...
-
-  DEC VXT200 XTerminal
-  --------------------
-  version number:    11.0
-  vendor string:    DECWINDOWS DigitalEquipmentCorp. / VXT 2000
-  vendor release number:    2001
-  maximum request size:  262140 bytes
-  motion buffer size:  0
-  bitmap unit, bit order, padding:    32, LSBFirst, 32
-  image byte order:    LSBFirst
-  keycode range:    minimum 85, maximum 252
-  number of extensions:    6
-      DEC-Server-Mgmt-Extension
-      ServerManagementExtension
-      D2DX Extensions
-      DEC-XTRAP
-      SHAPE
-      MIT-SUNDRY-NONSTANDARD
-
-  i don't know what the server management extensions, the D2DX
-  extension, or the DEC-XTRAP extension do, but i assume that one of
-  them has keyboard hardware query info in it ...
-
-
-  NCD 88K 8-bit Colour XTerminal
-  ------------------------------
-  version number:    11.0
-  vendor string:    Network Computing Devices Inc.
-  vendor release number:    3002
-  maximum request size:  65536 bytes
-  motion buffer size:  0
-  bitmap unit, bit order, padding:    32, MSBFirst, 32
-  image byte order:    MSBFirst
-  keycode range:    minimum 8, maximum 254
-  focus:  window 0x380000d, revert to PointerRoot
-  number of extensions:    6
-      SHAPE
-      XTEST
-      MIT-SUNDRY-NONSTANDARD
-      XIdle
-      ServerManagementExtension
-      NCD-SETUP
-
-
-
-****************************************************************/
-/* end of xguess.c */
+/* end of main.c */
 
