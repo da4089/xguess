@@ -33,6 +33,7 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <netdb.h>
 
@@ -41,16 +42,21 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <X11/Xatom.h>
 
 
+#if defined(__sun)
+extern int gethostname(char *name, int namelen);
+#endif
+
+
 /****************************************************************/
 
+/*-- DISPLAY environment variable name */
 #define DISPLAY "DISPLAY"
 
-
 /*-- vendor ID strings */
-
 #define DECWINDOWS "DECWINDOWS"
 #define NCD        "Network Computing Devices Inc."
 #define OSF1_3_2C  "DECWINDOWS Digital Equipment Corporation Digital UNIX V3.2C"
+#define OSF1_4_0   "DECWINDOWS Digital Equipment Corporation Digital UNIX V4.0"
 #define SUNOS_5_5  "X11/NeWS - Sun Microsystems Inc."
 #define ULTRIX_4_4 "DECWINDOWS Digital Equipment Corporation UWS V4.4"
 #define VXT2000    "DECWINDOWS DigitalEquipmentCorp. / VXT 2000"
@@ -58,7 +64,7 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #define X_R5       "MIT X Consortium"
 #define X_R6       "X Consortium"
 
-
+/*-- root window property names */
 #define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
 
 
@@ -66,11 +72,13 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 
 #if !defined(__sun) && !defined(__alpha)
 
-#include <stdio.h>
-
 char *local_guess(void) {
   return (char *)NULL;
 }
+
+#else
+
+extern char  *local_guess(void);
 
 #endif
 
@@ -220,9 +228,9 @@ void keyboard_guess(Display *display) {
   k.serial = 1;
   k.send_event = 0;
   k.display = display;
-  k.window = NULL;
-  k.root = NULL;
-  k.subwindow = NULL;
+  k.window = (Window)NULL;
+  k.root = (Window)NULL;
+  k.subwindow = (Window)NULL;
   k.time = 1;
   k.x = 1;
   k.y = 1;
@@ -384,11 +392,17 @@ void keyboard_guess(Display *display) {
 void main(int argc, char *argv[]) {
   Display  *display;
   char     *display_name;
-  char     *optarg = NULL;
-  int      optind = 0;
-  int      opterr = 0;
-  int      optopt = 0;
+  char     *optarg;
+  int      optind;
+  int      opterr;
+  int      optopt;
   int      c = 0;
+
+  /*-- assign to vars to prevent 'unused variable' errors */
+  optarg = NULL;
+  optind = 0;
+  opterr = 0;
+  optopt = 0;
 
   if (argc != 2) {
     usage(argv[0]);

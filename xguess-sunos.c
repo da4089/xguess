@@ -59,6 +59,7 @@ static char *xguess_sunos_dummy = "warning prevention";
 extern char *strdup (const char *);
 
 #include <stdio.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <string.h>
 #include <sys/time.h>
