@@ -1,16 +1,18 @@
 .\" name sect foot-centre foot-left  head-centre   origin  architecture
-.TH xguess 1  "June 2000"  "GNU"  "User Commands" "GNU" ""
+.TH xguess 1  "August 2000"  "GNU"  "User Commands" "GNU" ""
 .SH NAME
 xguess \- determine information about your X server
 .SH SYNOPSIS
-.B "xguess"
-\-xyzmrvkh
+.BR "xguess" " [-s n] -xyzmnrvkhV"
 .SH FLAGS
 .PP
-Flags are all exclusive.
+All flags except -s are exclusive.
 .TP 4
 \-h
 prints a simple description of legal syntax and functions.
+.TP 4
+\-V
+prints the version number of the program.
 .TP 4
 \-k
 attempts to determine the type of keyboard attached to the X server
@@ -24,10 +26,10 @@ Currently supported keyboard layouts
 Digital LK-201 used on DECStation 3100's and other older machines.
 .IP lk401 8
 Digital LK-401 used on DECStation 5000's and early Alpha's.
-.IP pc101 8
-Standard PC layout (introduced with IBM PC/AT)
 .IP pc84 8
 IBM PC and PC/XT layout
+.IP pc101 8
+Standard PC layout (introduced with IBM PC/AT)
 .IP type3 8
 Sun Type 3 layout used for later Sun3 systems
 .IP type4 8
@@ -49,6 +51,9 @@ Network Computing Devices.  Models include n97, n101, n102, n107,
 n108.
 .IP ibm 8
 International Business Machines.  Model 5168572M only.
+.IP xfree86 8
+XFree86, Incorporated.  A huge variety of models and national
+variations.
 .RE
 .PP
 .TP 4
@@ -56,11 +61,18 @@ International Business Machines.  Model 5168572M only.
 returns the manufacturer string from the X server for the default
 display and screen.
 .TP 4
+\-n
+returns the number of screens (heads) attached to the specified
+display.  See also -s.
+.TP 4
 \-r
 returns the manufacturer's release number from the X server for the
 default display and screen.  For X Consortium servers, this is the
 release number of X11 (eg. 6000 == X11R6), but this does not apply to
 all vendors.
+.TP 4
+\-s select a screen for a multi-head display.  By default, the -x -y
+-z operations apply to screen 0.
 .TP 4
 \-v
 returns protocol major and minor versions supported by the X server
@@ -131,9 +143,11 @@ To get the default host, display number, and screen.
 .SH "SEE ALSO"
 .PP
 .I xdpyinfo(1X), 
-.I xdm(1X) 
+.I xdm(1X),
+.I xkbcomp(1X),
+.br
+.I The X Keyboard Extension: Library Specification
 .SH AUTHOR
 .PP
 David Arnold, (davida@pobox.com)
 .\" ***************************************************************
- 

@@ -27,10 +27,10 @@ bin_PROGRAMS = xguess
 
 # xcoffeebiff has many sources
 xguess_SOURCES = \
-	xguess-dummy.c \
 	xguess-osf1.c \
 	xguess-sunos.c \
 	xguess-ultrix.c \
+	xguess-linux.c \
 	xguess.c
 
 man_MANS = xguess.1

@@ -90,15 +90,15 @@ static int screen_number = 0;
 
 /****************************************************************/
 
-#if !defined(__sun) && !defined(__alpha) && 0
+#if defined(__linux) || defined(linux) 
+
+extern char  *local_guess(void);
+
+#else
 
 char *local_guess(void) {
   return (char *)NULL;
 }
-
-#else
-
-extern char  *local_guess(void);
 
 #endif
 
@@ -432,13 +432,8 @@ void main(int argc, char *argv[]) {
     case 'r':
     case 'v':
     case 'k':
-      if (operation) {
-	usage(argv[0]);
-	exit(1);
-      }
       operation = c;
       break;
-
     case 'h':
       usage(argv[0]);
       exit(0);
