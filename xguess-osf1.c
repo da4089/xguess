@@ -44,12 +44,15 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <machine/hal_sysinfo.h>
 
 
+#define BUFFER    255
+
+
 char *local_guess(void) {
 
-  char buf1[255];
+  char buf_sysinfo[BUFFER], buf_output[BUFFER], *layout, *model;
   int error;
 
-  error = getsysinfo(GSI_KEYBOARD, (caddr_t)&buf1, 255, 0, 0);
+  error = getsysinfo(GSI_KEYBOARD, (caddr_t)buf_sysinfo, 255, 0, 0);
 
   if (error == -1) {
     switch (errno) {
@@ -66,7 +69,22 @@ char *local_guess(void) {
       return NULL;
     }
   } else {
-    return strdup(buf1);
+    if (strcmp(buf_sysinfo, "PCXAL") == 0) {
+      layout = "pc";
+      model  = "pcxal";
+    } else if (strcmp(buf_sysinfo, "PC7XL") == 0) {
+      layout = "pc";
+      model  = "pc7xl";
+    } else  if (strcmp(buf_sysinfo, "LK401") == 0) {
+      layout = "dec";
+      model  = "lk401";
+    } else {
+      layout = "unknown";
+      model  = "unknown";
+    }
+
+    sprintf(buf_output, "dec-%s-%s", layout, model);
+    return strdup(buf_output);
   }
 }
 
