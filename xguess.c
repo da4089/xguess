@@ -14,6 +14,7 @@
       Level 7, Gehrmann Labs
       University of Queensland
       St Lucia, 4072
+      Australia
       Tel: +61 7 3365 4310
       Fax: +61 7 3365 4311
       Email: enquiries@dstc.edu.au
@@ -39,8 +40,38 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <X11/Xutil.h>
 
 
+/****************************************************************/
+
 #define DISPLAY "DISPLAY"
 
+
+/*-- vendor ID strings */
+
+#define DECWINDOWS "DECWINDOWS"
+#define NCD        "Network Computing Devices Inc."
+#define OSF1_3_2C  "DECWINDOWS Digital Equipment Corporation Digital UNIX V3.2C"
+#define SUNOS_5_5  "X11/NeWS - Sun Microsystems Inc."
+#define ULTRIX_4_4 "DECWINDOWS Digital Equipment Corporation UWS V4.4"
+#define VXT2000    "DECWINDOWS DigitalEquipmentCorp. / VXT 2000"
+#define X_R4       "MIT X Consortium"
+#define X_R5       "MIT X Consortium"
+#define X_R6       "X Consortium"
+
+
+/****************************************************************/
+
+#if !defined(__sun) && !defined(__alpha)
+
+#include <stdio.h>
+
+char *local_guess(void) {
+  return (char *)NULL;
+}
+
+#endif
+
+
+/****************************************************************/
 
 int is_local_server(Display *display) {
   int   is_local = 1;
@@ -120,10 +151,6 @@ void usage(char *argv0) {
      hardware.  A default routine returns no result.
 
   2) check the manufacturer string of the X server.  Known values are
-     - "MIT X Consortium"  (R4 or R5 vanilla X)
-     - "X Consortium"      (R6 vanilla X)
-     - "DECWINDOWS Digital Equipment Corporation Digital UNIX V3.2C"
-     - "X11/NeWS - Sun Microsystems Inc."
 
      This gives us some idea of what keyboards might be attached,
      and in particular, what keymaps might be in use so that we
@@ -177,8 +204,54 @@ void keyboard_guess(Display *display) {
   } else if (strcmp(vendor, "X Consortium") == 0) {
     /* vanilla R6 */
 
+  } else if (strcmp(vendor, NCD) == 0) {
+    /* an NCD XTerminal
+
+       NCD has a range of keyboard types, which are reported by their
+       setup utility.  They fall into general categories ...
+
+       n97 n101 n102 pc-xview - PC layout
+       n107 123ux             - Sun Type5 layout
+       n108us or n108de       - Digital LK401 layout (US and German models)
+       vt220                  - Digital LK201 layout
+
+       Detection is hard, since the keycode mapping is normally
+       supplied by the X client which can ignore the fact that it's
+       not one of their displays on the end, and map things all over
+       the place.  For example, hosting a NCD off a Digital Unix box
+       will give you the impression that there is an LK401 atttached,
+       regardless of what is really there ...
+
+       I think the solution (here it comes ...) is to figure out a way
+       to talk to the NCD-SETUP extension that is loaded into the X
+       server on all NCDs.  I imagine that this has the ability to
+       extract the same keyboard info that their setup app does, and
+       *it* can tell you what keyboard is attached ...
+    */
+
+    /* no idea, other than NCD ... */
+    printf("ncd-unknown-unknown\n");
+    return;
+
+    /* old stuff that doesn't work ... */
+    k.keycode = 120;  /* Compose_R on an NCD DEC-style keyboard */
+                      /* 'F1' on an IBM PC-style */
+    key = XLookupKeysym(&k, 0);
+    if ((int)key == 0xff20) {
+      printf("ncd-dec-n108\n");
+      return;
+    }
+
+    k.keycode = 16;
+    key = XLookupKeysym(&k, 0);
+    if ((int)key == 0xffbe) {
+      printf("ncd-pc-n101\n");
+      return;
+    }
+
+    
   } else if (strncmp(vendor, "DECWINDOWS", 10) == 0) {
-    /* Digital's DECwindows */
+    /* something with a Digital X Server */
 
     k.keycode = 88;  /* Control_R on a PC-style keyboard */
     key = XLookupKeysym(&k, 0);
@@ -301,6 +374,54 @@ void main(int argc, char *argv[]) {
 }
 
 
-/***************************************************************/
+/***************************************************************
+
+  Some sundry information about various X servers ...
+
+  DEC VXT200 XTerminal
+  --------------------
+  version number:    11.0
+  vendor string:    DECWINDOWS DigitalEquipmentCorp. / VXT 2000
+  vendor release number:    2001
+  maximum request size:  262140 bytes
+  motion buffer size:  0
+  bitmap unit, bit order, padding:    32, LSBFirst, 32
+  image byte order:    LSBFirst
+  keycode range:    minimum 85, maximum 252
+  number of extensions:    6
+      DEC-Server-Mgmt-Extension
+      ServerManagementExtension
+      D2DX Extensions
+      DEC-XTRAP
+      SHAPE
+      MIT-SUNDRY-NONSTANDARD
+
+  i don't know what the server management extensions, the D2DX
+  extension, or the DEC-XTRAP extension do, but i assume that one of
+  them has keyboard hardware query info in it ...
+
+
+  NCD 88K 8-bit Colour XTerminal
+  ------------------------------
+  version number:    11.0
+  vendor string:    Network Computing Devices Inc.
+  vendor release number:    3002
+  maximum request size:  65536 bytes
+  motion buffer size:  0
+  bitmap unit, bit order, padding:    32, MSBFirst, 32
+  image byte order:    MSBFirst
+  keycode range:    minimum 8, maximum 254
+  focus:  window 0x380000d, revert to PointerRoot
+  number of extensions:    6
+      SHAPE
+      XTEST
+      MIT-SUNDRY-NONSTANDARD
+      XIdle
+      ServerManagementExtension
+      NCD-SETUP
+
+
+
+****************************************************************/
 /* end of xguess.c */
 
