@@ -1,3 +1,7 @@
+v1.4
+----
+- fixes to distribution (missing header files).
+
 v1.3
 ----
 - minor fixes to configure to support newer versions of autoconf.

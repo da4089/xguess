@@ -35,7 +35,12 @@ xguess_SOURCES = \
 
 man_MANS = xguess.1
 
-EXTRA_DIST = $(man_MANS)
+EXTRA_DIST = \
+	$(man_MANS) \
+	osf1.h \
+	sunos.h \
+	ultrix.h \
+	xkb.h
 
 
 #############################################################################
