@@ -1,0 +1,44 @@
+
+  Some sundry information about various X servers ...
+
+  DEC VXT200 XTerminal
+  --------------------
+  version number:    11.0
+  vendor string:    DECWINDOWS DigitalEquipmentCorp. / VXT 2000
+  vendor release number:    2001
+  maximum request size:  262140 bytes
+  motion buffer size:  0
+  bitmap unit, bit order, padding:    32, LSBFirst, 32
+  image byte order:    LSBFirst
+  keycode range:    minimum 85, maximum 252
+  number of extensions:    6
+      DEC-Server-Mgmt-Extension
+      ServerManagementExtension
+      D2DX Extensions
+      DEC-XTRAP
+      SHAPE
+      MIT-SUNDRY-NONSTANDARD
+
+  i don't know what the server management extensions, the D2DX
+  extension, or the DEC-XTRAP extension do, but i assume that one of
+  them has keyboard hardware query info in it ...
+
+
+  NCD 88K 8-bit Colour XTerminal
+  ------------------------------
+  version number:    11.0
+  vendor string:    Network Computing Devices Inc.
+  vendor release number:    3002
+  maximum request size:  65536 bytes
+  motion buffer size:  0
+  bitmap unit, bit order, padding:    32, MSBFirst, 32
+  image byte order:    MSBFirst
+  keycode range:    minimum 8, maximum 254
+  focus:  window 0x380000d, revert to PointerRoot
+  number of extensions:    6
+      SHAPE
+      XTEST
+      MIT-SUNDRY-NONSTANDARD
+      XIdle
+      ServerManagementExtension
+      NCD-SETUP

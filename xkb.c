@@ -28,6 +28,8 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #endif
 
 
+#include "config.h"
+
 #if defined(HAVE_X11_XKBLIB_H) && defined(HAVE_X11_EXTENSIONS_XKBGEOM_H)
 
 
@@ -55,7 +57,7 @@ char *xguess_from_xkb(void) {
   char *display_name = ":0.0";
   Display *display = NULL;
   XkbDescPtr kbd;
-  char *keycodes, *geometry, *types, *symbols, *s;
+  char *keycodes, *geometry, *types, *symbols, *s, *c, *b;
   char buf[1023];
 
   /* check version, extension and open display */
@@ -91,11 +93,25 @@ char *xguess_from_xkb(void) {
   }
 
   /* look up attributes */
-  keycodes = XGetAtomName(display, kbd->names->keycodes);
   geometry = XGetAtomName(display, kbd->geom->name);
+  keycodes = XGetAtomName(display, kbd->names->keycodes);
   symbols = XGetAtomName(display, kbd->names->symbols);
 
-  sprintf(buf, "%s-%s-%s", keycodes, geometry, symbols);
+  /* strips parens from geometry */
+  c = geometry;
+  b = &buf[0];
+  while (*c != '(' && *c != '\0') {
+    c++;
+  }
+
+  if (*c == '(') {
+    c++;
+    while (*c != ')' && *c != '\0') {
+      *b++ = *c++;
+    }
+  }
+
+  sprintf(b, "-%s-%s", keycodes, symbols);
   return strdup(buf);
 }
 

@@ -40,6 +40,10 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 
 #include "config.h"
 
+#if defined(HAVE_X11_XKBLIB_H)
+#  include "xkb.h"
+#endif
+
 #if defined(__sun)
 extern int gethostname(char *name, int namelen);
 #endif
@@ -52,6 +56,9 @@ extern int gethostname(char *name, int namelen);
 
 /*-- root window property names */
 #define NCD_KB_PROPERTY "_NCD_KEYBOARD_TYPE"
+
+/* X Keyboard Extension name string */
+#define XKB_EXTENSION_NAME "XKEYBOARD"
 
 /*-- vendor ID strings */
 #define DECWINDOWS "DECWINDOWS"
@@ -82,6 +89,27 @@ static struct option long_options[] =
 };
 
 static int screen_number = 0;
+
+
+void usage(char *argv0) {
+  fprintf(stderr, 
+	  "Usage: %s [-s n] -x|-y|-z|-m|-n|-r|-v|-k|-h\n"
+	  "where\n"
+	  "       -x horizontal resolution\n"
+	  "       -y vertical resolution\n"
+	  "       -z colour depth (bits/pixel)\n"
+	  "       -m X server manufacturer\n"
+	  "       -n number of screens on X server\n"
+	  "       -r X server manufacturer release number\n"
+	  "       -s screen number to use for other operations\n"
+	  "       -v version of X protocol\n"
+	  "       -k keyboard type string. NOTE: must be run\n"
+	  "          before altering mappings with xmodmap!\n"
+	  "       -V version of this program\n"
+	  "       -h display this message\n\n",
+	  argv0);
+  exit(1);
+}
 
 
 /****************************************************************
@@ -155,22 +183,24 @@ int is_local_server(Display *display) {
 }
 
 
+/*
+ *  ncd_guess()
+ *
+ *  NCD has a range of keyboard types, which are reported by their
+ *  setup utility.  They fall into general categories ...
+ *  
+ *  n97 n101 n102 pc-xview - PC layout
+ *  n107 123ux             - Sun Type5 layout
+ *  n108us or n108de       - Digital LK401 layout (US and German models)
+ *  vt220                  - Digital LK201 layout
+ *
+ *  NCD, helpful people that they are (thanks Ken Johnson!) put the
+ *  keyboard type as a property on the root window.
+ */
+
+
 char *ncd_guess(Display *display)
 {
-  /* an NCD XTerminal
-
-     NCD has a range of keyboard types, which are reported by their
-     setup utility.  They fall into general categories ...
-     
-     n97 n101 n102 pc-xview - PC layout
-     n107 123ux             - Sun Type5 layout
-     n108us or n108de       - Digital LK401 layout (US and German models)
-     vt220                  - Digital LK201 layout
-
-     NCD, helpful people that they are (thanks Ken Johnson!) put the
-     keyboard type as a property on the root window.
-  */
-
   Atom ncd_atom, actual_type_return;
   int  res, actual_format_return;
   unsigned long nitems_return, bytes_after_return;
@@ -197,34 +227,24 @@ char *ncd_guess(Display *display)
     if (res == Success) {
       if (strcmp(buf, "N-108 US") == 0) {
 	type = strdup("lk401-ncd-n108us");
-
       } else if (strcmp(buf, "N-108 DE") == 0) {
 	type = strdup("lk401-ncd-n108de");
-
       } else if (strcmp(buf, "N-101") == 0) {
 	type = strdup("pc101-ncd-n101");
-
       } else if (strcmp(buf, "N-102 US") == 0) {
 	type = strdup("pc101-ncd-n102us");
-
       } else if (strcmp(buf, "N-97") == 0) {
 	type = strdup("type4-ncd-n97");
-
       } else if (strcmp(buf, "N-107") == 0) {
 	type = strdup("type5-ncd-n107");
-
       } else if (strcmp(buf, "VT-220") == 0) {
 	type = strdup("lk401-ncd-vt220");
-
       } else if (strcmp(buf, "123UX") == 0) {
 	type = strdup("unknown-ncd-123ux");
-
       } else if (strcmp(buf, "PC-Xview") == 0) {
 	type = strdup("pc101-ncd-pcxview");
-
       } else if (strcmp(buf, "IBM PS/2") == 0) {
 	type = strdup("unknown-ncd-ps2");
-
       } else {
   	type = strdup("unknown-ncd-");
   	strcat(type, buf);
@@ -232,27 +252,6 @@ char *ncd_guess(Display *display)
     }
   }
   return type;
-}
-
-
-void usage(char *argv0) {
-  fprintf(stderr, 
-	  "Usage: %s [-s n] -x|-y|-z|-m|-n|-r|-v|-k|-h\n"
-	  "where\n"
-	  "       -x horizontal resolution\n"
-	  "       -y vertical resolution\n"
-	  "       -z colour depth (bits/pixel)\n"
-	  "       -m X server manufacturer\n"
-	  "       -n number of screens on X server\n"
-	  "       -r X server manufacturer release number\n"
-	  "       -s screen number to use for other operations\n"
-	  "       -v version of X protocol\n"
-	  "       -k keyboard type string. NOTE: must be run\n"
-	  "          before altering mappings with xmodmap!\n"
-	  "       -V version of this program\n"
-	  "       -h display this message\n\n",
-	  argv0);
-  exit(1);
 }
 
 
@@ -326,8 +325,21 @@ char *keyboard_guess(Display *display) {
   XKeyEvent k;
   KeySym    key;
   char      *res, *vendor;
+  char      **extensions;
+  int       n_extensions, i;
 
   /* does the server have the X Keyboard Extension */
+  extensions = XListExtensions(display, &n_extensions);
+  if (extensions) {
+    for (i=0; i < n_extensions; i++) {
+      if (strcmp(*extensions, XKB_EXTENSION_NAME) == 0) {
+	if ((res = xguess_from_xkb())) {
+	  return res;
+	}
+      }
+      extensions++;
+    }
+  }
 
   /*-- is hostname same as display host? */
   if (is_local_server(display)) {
