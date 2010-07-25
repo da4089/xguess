@@ -5,7 +5,7 @@
  *
  * File:        $Source$
  * Version:     $RCSfile$ $Revision$
- * Copyright:   (C) 1995-2004 David Arnold.
+ * Copyright:   (C) 1995-2010 David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -204,7 +204,7 @@ char *ncd_guess(Display *display)
   Atom ncd_atom, actual_type_return;
   int  res, actual_format_return;
   unsigned long nitems_return, bytes_after_return;
-  unsigned char *buf;
+  char *buf;
   char *type = NULL;
 
   /* get the atom number for the NCD keyboard property */
@@ -222,7 +222,7 @@ char *ncd_guess(Display *display)
 			     &actual_format_return,
 			     &nitems_return,
 			     &bytes_after_return,
-			     &buf); /* the actual value! */
+			     (unsigned char**)&buf); /* the actual value! */
 
     if (res == Success) {
       if (strcmp(buf, "N-108 US") == 0) {
@@ -529,6 +529,6 @@ int main(int argc, char *argv[]) {
 }
 
 
-/***************************************************************
+/***************************************************************/
 /* end of main.c */
 

@@ -5,7 +5,7 @@
  *
  * File:        $Source$
  * Version:     $RCSfile$ $Revision$
- * Copyright:   (C) 2000-2004 David Arnold.
+ * Copyright:   (C) 2000-2010 David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,15 +37,16 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
 #include <X11/extensions/XKBgeom.h>
 
-static error_handler(Display *dpy, XErrorEvent err) {
-    printf("got an error\n");
-    printf("code = %d\n", err.error_code);
+static int error_handler(Display *dpy, XErrorEvent *err) {
+    printf("Got an X error on display %s\n", DisplayString(dpy));
+    printf("Code = %d\n", err->error_code);
     return 1;
 }
 
@@ -57,7 +58,7 @@ char *xguess_from_xkb(void) {
     char *display_name = ":0.0";
     Display *display = NULL;
     XkbDescPtr kbd;
-    char *keycodes, *geometry, *types, *symbols, *s, *c, *b;
+    char *keycodes, *geometry, *symbols, *c, *b;
     char buf[1023];
     int was_punct;
 

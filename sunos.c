@@ -46,9 +46,6 @@
 static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 #endif
 
-
-static char *xguess_sunos_dummy = "warning prevention";
-
 #if defined(__sun) || defined(sun)	/* whole file */
 
 #include <stdlib.h>
