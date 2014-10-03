@@ -2,7 +2,7 @@
  * xguess
  * X implementation attribute testing
  *
- * Copyright (C) 1995-2014, David Arnold.
+ * Copyright (C) 2007-2014, David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,56 +21,30 @@
  ****************************************************************/
 
 #if !defined(lint)
-static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
+static const char rcsid[] = "@(#)$RCSfile: osf1.c,v $ $Revision: 1.2 $";
 #endif
 
 
-#if defined(__ultrix) || defined(ultrix)	/* whole file */
+#if defined(__APPLE__)	/* whole file */
 
-
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-
-#include <sys/ioctl.h>
-#include <sys/devio.h>
 
 
-#define BUFFER    255
+char *xguess_from_apple(void) {
 
+    /* FIXME */
 
-char *local_guess(void) {
-
-  struct devget  dev_info;
-  int error, fd;
-
-  fd = open("/dev/console", "r");
-
-  error = ioctl(fd, DEVIOGET, &dev_info);
-
-  printf("Category %d\n", dev_info.category);
-  printf("Interface %s\n", dev_info.interface);
-  printf("Device %s\n", dev_info.device);
-  printf("Name %s\n", dev_info.dev_name);
-
-  return NULL;
+    fprintf(stderr, "+ server has Apple-WM extension\n");
+    return "apple-apple-unknown";
 }
 
 
-#ifdef DEBUG
-
-void main (void) {
-  printf ("%s\n", local_guess());
-  exit(0);
-}
-
-#endif /* DEBUG */
-
-
-#endif /* __ultrix || ultrix */
+#endif /* __APPLE__ */
 
 
 /***************************************************************/
-/* end of ultrix.c */
+/* end of osx.c */
 

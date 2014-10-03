@@ -1,10 +1,7 @@
 #############################################################################
+# xguess
 #
-#              xguess
-#
-# File:        $Source$
-# Version:     $RCSfile$ $Revision$
-# Copyright:   (C) 1998-2004, David Arnold.
+# Copyright (C) 1998-2014, David Arnold.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,8 +20,9 @@
 #############################################################################
 
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(main.c)
-AM_INIT_AUTOMAKE(xguess, 1.5)
+AC_INIT([xguess], [1.5])
+AC_CONFIG_SRCDIR([main.c])
+AM_INIT_AUTOMAKE
 
 dnl Checks for programs.
 AC_PROG_AWK

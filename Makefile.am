@@ -1,10 +1,7 @@
 #############################################################################
+# xguess
 #
-#              xguess
-#
-# File:        $Source$
-# Version:     $RCSfile$ $Revision$
-# Copyright:   (C) 1998-2003, David Arnold.
+# Copyright (C) 1998-2014, David Arnold.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,24 +20,27 @@
 #############################################################################
 # Process this file with automake to produce Makefile.in
 
-bin_PROGRAMS = xguess
+bin_PROGRAMS = \
+    xguess
 
-# xcoffeebiff has many sources
 xguess_SOURCES = \
-	osf1.c \
-	sunos.c \
-	ultrix.c \
-	xkb.c \
-	main.c
+    osf1.c \
+    osx.c \
+    sunos.c \
+    ultrix.c \
+    xkb.c \
+    main.c
 
-man_MANS = xguess.1
+man_MANS = \
+    xguess.1
 
 EXTRA_DIST = \
-	$(man_MANS) \
-	osf1.h \
-	sunos.h \
-	ultrix.h \
-	xkb.h
+    $(man_MANS) \
+    osf1.h \
+    osx.h \
+    sunos.h \
+    ultrix.h \
+    xkb.h
 
 
 #############################################################################

@@ -1,11 +1,8 @@
 /***************************************************************
+ * xguess
+ * X implementation attribute testing
  *
- *              xguess
- *              X implementation attribute testing
- *
- * File:        $Source$
- * Version:     $RCSfile$ $Revision$
- * Copyright:   (C) 1995-2010 David Arnold.
+ * Copyright (C) 1995-2014, David Arnold.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +37,7 @@ static const char rcsid[] = "@(#)$RCSfile$ $Revision$";
 
 #include "config.h"
 
+#include "osx.h"
 #if defined(HAVE_X11_XKBLIB_H)
 #  include "xkb.h"
 #endif
@@ -59,6 +57,9 @@ extern int gethostname(char *name, int namelen);
 
 /* X Keyboard Extension name string */
 #define XKB_EXTENSION_NAME "XKEYBOARD"
+
+/* Apple Window Manager extension name string */
+#define APPLEWM_EXTENSION_NAME "Apple-WM"
 
 /*-- vendor ID strings */
 #define DECWINDOWS "DECWINDOWS"
@@ -222,7 +223,7 @@ char *ncd_guess(Display *display)
 			     &actual_format_return,
 			     &nitems_return,
 			     &bytes_after_return,
-			     (unsigned char**)&buf); /* the actual value! */
+			     (unsigned char **)&buf); /* the actual value! */
 
     if (res == Success) {
       if (strcmp(buf, "N-108 US") == 0) {
@@ -325,18 +326,30 @@ char *keyboard_guess(Display *display) {
   KeySym    key;
   char      *res, *vendor;
   char      **extensions;
+  char      **ext_name;
   int       n_extensions, i;
 
-  /* does the server have the X Keyboard Extension */
   extensions = XListExtensions(display, &n_extensions);
   if (extensions) {
-    for (i=0; i < n_extensions; i++) {
-      if (strcmp(*extensions, XKB_EXTENSION_NAME) == 0) {
+
+    /* Does the server have the X Keyboard (XKB) extension */
+    for (i=0, ext_name = extensions; i < n_extensions; i++) {
+      if (strcmp(*ext_name, XKB_EXTENSION_NAME) == 0) {
 	if ((res = xguess_from_xkb())) {
 	  return res;
 	}
       }
-      extensions++;
+      ext_name++;
+    }
+
+    /* Does the server have the Apple Window Manager (Apple-WM) extension */
+    for (i=0,ext_name = extensions; i < n_extensions; i++) {
+      if (strcmp(*ext_name, APPLEWM_EXTENSION_NAME) == 0) {
+        if ((res = xguess_from_apple())) {
+          return res;
+        }
+      }
+      ext_name++;
     }
   }
 

@@ -1,3 +1,4 @@
+*.o
 .deps
 COPYING
 INSTALL
@@ -5,6 +6,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
+compile
 config.cache
 config.h
 config.h.in
@@ -16,7 +18,7 @@ depcomp
 install-sh
 missing
 stamp-h
-stamp-h1
 stamp-h.in
+stamp-h1
 xguess
 xguess-*.tar.gz

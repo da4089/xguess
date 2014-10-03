@@ -1,5 +1,5 @@
-#ifndef XGUESS_OSF1_H
-#define XGUESS_OSF1_H
+#ifndef XGUESS_OSX_H
+#define XGUESS_OSX_H
 /***************************************************************
  * xguess
  * X implementation attribute testing
@@ -20,25 +20,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- ****************************************************************/
+ ***************************************************************/
 
-#if defined(__osf1) || defined(osf1)
-
-/* 
- * if running on OSF/1, we know how to test a local keyboard
- */
-#define XGUESS_LOCAL     (1)
-
-
-/*
- * our local_guess function uses /dev/kbd and the layout ioctl
- */
-
-extern char *local_guess(void);
-
-
-#endif /* __osf1 || osf */
+char *xguess_from_apple(void);
 
 /***************************************************************/
-#endif  /* XGUESS_OSF1_H */
+#endif  /* XGUESS_OSX_H */
 
